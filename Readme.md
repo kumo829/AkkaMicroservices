@@ -150,6 +150,75 @@ First, add a new helm repo (if it is not added yet):
 helm repo add bitnami  https://charts.bitnami.com 
 ```
 
+Next, update your local repositories:
+
+```shell
+helm repo update
+```
+
+As I spend some time explaining how Helm works, I'll use it to install all the infrastructure elements that I'm using for this project.
+
+### Installing PostgreSQL
+
+I'm using PostgreSQL as one of the persistence data storage. The data in the PostgreSQL database need to persist across pod restarts.
+To achieve this, I created a `PersistentVolume` resource:
+
+```shell
+sudo mkdir /var/postgresql
+````
+
+```shell
+kubectl apply -f .helm/04-postgresql-pv.yaml
+```
+
+Create a Persistent Volume Claim (PVC) to request the storage allocated in the previous step.
+
+```shell
+kubectl apply -f .helm/05-postgres-pvc.yaml
+```
+
+Use `kubectl` get to check if the **PVC** is connected to the **PV** successfully:
+
+```shell
+kubectl get pvc
+```
+The status column shows that the claim is `Bound`.
+
+#### Install the Helm chart.
+
+```shell
+helm install \
+shopping-db \
+--namespace default \
+-f .helm/postgresql-values.yaml bitnami/postgresql
+```
+
+Wait for the database to start.
+
+```shell
+kubectl wait --namespace default \
+--for=condition=ready pod \
+--selector=app.kubernetes.io/instance=shopping-db \
+--timeout=180s
+```
+
+#### Connect to PostgreSQL Client 
+
+Export the `POSTGRES_PASSWORD` environment variable to be able to log into the PostgreSQL instance:
+```shell
+export POSTGRES_PASSWORD=$(kubectl get secret --namespace default shopping-db-postgresql -o jsonpath="{.data.password}" | base64 -d)
+```
+To connect to the database from outside the cluster execute the following commands:
+
+```shell
+ kubectl port-forward --namespace default svc/shopping-db-postgresql 5432:5432 & PGPASSWORD="$POSTGRES_PASSWORD" psql --host 127.0.0.1 -U shopping_user -d v -p 5432
+```
+I connect using [DBeaver](https://dbeaver.io/) and from there execute the `.scripts/dll/01-create_tables.sql` script that contains transactional tables and akka projections as well.
+
+
+
+
+
 # Resources
 
 ## Akka
