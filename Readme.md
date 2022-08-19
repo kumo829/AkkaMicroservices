@@ -184,6 +184,12 @@ kubectl get pvc
 ```
 The status column shows that the claim is `Bound`.
 
+I'm storing the PostgreSQL username and passwords in a Kubernetes *secret* and I'm referencing those secrets in the configuration file for the helm chart, so first I created the secret:
+
+```shell
+kubectl apply -f .helm/06-postgres-secret.yaml
+```
+
 #### Install the Helm chart.
 
 ```shell
@@ -204,10 +210,14 @@ kubectl wait --namespace default \
 
 #### Connect to PostgreSQL Client 
 
-Export the `POSTGRES_PASSWORD` environment variable to be able to log into the PostgreSQL instance:
+Export the `POSTGRES_PASSWORD` and `POSTGRES_ADMIN_PASSWORD` environment variables to be able to log into the PostgreSQL instance:
 ```shell
-export POSTGRES_PASSWORD=$(kubectl get secret --namespace default shopping-db-postgresql -o jsonpath="{.data.password}" | base64 -d)
+export POSTGRES_PASSWORD=$(kubectl get secret --namespace default postgres-secret -o jsonpath="{.data.password}" | base64 -d)
 ```
+```shell
+export POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace default postgres-secret -o jsonpath="{.data.postgresPassword}" | base64 -d)
+```
+
 To connect to the database from outside the cluster execute the following commands:
 
 ```shell
