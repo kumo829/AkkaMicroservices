@@ -3,8 +3,13 @@
 | Technology                                                                                                                                               | Version |                             Type                              |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------|:-------:|:-------------------------------------------------------------:|
 | <img align="left" alt="Scala" width="40" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scala/scala-original.svg" />   Scala                    | 2.13.8  | ![programming](https://img.shields.io/badge/-programming-red) |
-| <img align="left" alt="Akka" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Actors                                                | 2.6.19  | ![programming](https://img.shields.io/badge/-programming-red) |
+| <img align="left" alt="Akka Actors Typed" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Actors Typed                             | 2.6.19  | ![programming](https://img.shields.io/badge/-programming-red) |
+| <img align="left" alt="Akka Http" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Http                                             | 10.2.9  | ![programming](https://img.shields.io/badge/-programming-red) |
+| <img align="left" alt="Akka Management" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Management                                 |  1.1.3  | ![programming](https://img.shields.io/badge/-programming-red) |
+| <img align="left" alt="Akka Persistence" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Persistence Jdbc                          |  5.0.4  | ![programming](https://img.shields.io/badge/-programming-red) |
+| <img align="left" alt="Akka Projection" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Projection                                 |  1.2.4  | ![programming](https://img.shields.io/badge/-programming-red) |
 | <img align="left" alt="sbt" width="40" src="https://upload.wikimedia.org/wikipedia/commons/4/43/Sbt-logo.svg" /> SBT                                     |  1.7.1  |      ![build](https://img.shields.io/badge/-build-blue)       |
+| <img align="left" alt="PostgreSQL" width="40" src="" /> PostgreSQL                                                                                       |    14.5.0     |     ![build](https://img.shields.io/badge/-infra-orange)      |
 | <img align="left" alt="Kubernetes" width="40" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" /> Kubernetes     | 1.24.0  |      ![infa](https://img.shields.io/badge/-infra-orange)      |
 | <img align="left" alt="KinD" width="40" src="https://d33wubrfki0l68.cloudfront.net/d0c94836ab5b896f29728f3c4798054539303799/9f948/logo/logo.png" /> KinD | 0.14.0  |      ![infa](https://img.shields.io/badge/-infra-orange)      |
 | <img align="left" alt="Helm" width="40" src="https://cncf-branding.netlify.app/img/projects/helm/stacked/color/helm-stacked-color.svg" /> Helm           |  3.9.3  |      ![infa](https://img.shields.io/badge/-infra-orange)      |
@@ -17,6 +22,11 @@ I already have some hands-on experience using **Docker**, **Kubernetes**, **KinD
 
 This section page will resume the general steps that are independent of the tech-stack and will add more documentation as I move forward in the project.
 
+The project will be a simple shopping  system with three microservices that will communicate each other using gRPC. I'm also aiming to follow the [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) using Kafka, enabling CQRS and event based communication with other services.
+
+TODO: Add more information details about the project.
+
+TODO: Add a high level architecture diagram of the project.
 
 ### Kubernetes and KinD
 
@@ -225,8 +235,38 @@ To connect to the database from outside the cluster execute the following comman
 ```
 I connect using [DBeaver](https://dbeaver.io/) and from there execute the `.scripts/dll/01-create_tables.sql` script that contains transactional tables and akka projections as well.
 
+## gRPC
 
+<details>
+  <summary>gRPC concepts</summary>
 
+`gRPC` is a transport mechanism for request/response and streaming use cases. It can run in almost any environment with bindings to many programming languages. It takes a 
+**schema-first** approach, where your protocol is declared in a *Protobuf* service descriptor. From the service descriptor the source code for the messages, client and 
+server stubs are generated.
+
+It has several advantages:
+- Schema-first design favors well-defined and decoupled service interfaces over brittle ad-hoc solutions.
+- The Protobuf-based wire protocol is efficient, well-known, and allows compatible schema evolution.
+- It is based on HTTP/2 which allows multiplexing several data streams over a single connection.
+- Streaming requests and responses are first class.
+- There are tools available for many languages allowing seamless interoperability between clients and services written in different languages.
+
+That makes it well-suited for:
+- Connections between internal services
+- Connecting to external services that expose a gRPC API (even ones written in other languages)
+- Serving data to web or mobile front-ends
+
+[Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/) is a gRPC library for the Akka ecosystem. It has support for Maven, gradle and sbt. The gRPC servers and clients use 
+*Akka Streams*, Scala `Future` and Java `CompletionStage` in the user facing API.
+</details>
+
+For Akka, the `akka.grpc.sbt.AkkaGrpcPlugin` auto generates the source code for the messages, client and server stubs from a protobuf service descriptor file (`.proto`) when the project is compiled, so it is enough to run:
+
+```shell
+sbt compile
+```
+
+See: [ShoppingCartService.proto](./src/main/protobuf/ShoppingCartService.proto)
 
 
 # Resources
