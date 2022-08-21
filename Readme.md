@@ -9,7 +9,7 @@
 | <img align="left" alt="Akka Persistence" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Persistence Jdbc                          |  5.0.4  | ![programming](https://img.shields.io/badge/-programming-red) |
 | <img align="left" alt="Akka Projection" width="40" src="https://www.svgrepo.com/show/353381/akka.svg" /> Akka Projection                                 |  1.2.4  | ![programming](https://img.shields.io/badge/-programming-red) |
 | <img align="left" alt="sbt" width="40" src="https://upload.wikimedia.org/wikipedia/commons/4/43/Sbt-logo.svg" /> SBT                                     |  1.7.1  |      ![build](https://img.shields.io/badge/-build-blue)       |
-| <img align="left" alt="PostgreSQL" width="40" src="" /> PostgreSQL                                                                                       |    14.5.0     |     ![build](https://img.shields.io/badge/-infra-orange)      |
+| <img align="left" alt="PostgreSQL" width="40" src="https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/postgresql/postgresql.png" /> PostgreSQL                                                                                       |    14.5.0     |     ![build](https://img.shields.io/badge/-infra-orange)      |
 | <img align="left" alt="Kubernetes" width="40" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg" /> Kubernetes     | 1.24.0  |      ![infa](https://img.shields.io/badge/-infra-orange)      |
 | <img align="left" alt="KinD" width="40" src="https://d33wubrfki0l68.cloudfront.net/d0c94836ab5b896f29728f3c4798054539303799/9f948/logo/logo.png" /> KinD | 0.14.0  |      ![infa](https://img.shields.io/badge/-infra-orange)      |
 | <img align="left" alt="Helm" width="40" src="https://cncf-branding.netlify.app/img/projects/helm/stacked/color/helm-stacked-color.svg" /> Helm           |  3.9.3  |      ![infa](https://img.shields.io/badge/-infra-orange)      |
@@ -269,13 +269,51 @@ sbt compile
 See: [ShoppingCartService.proto](./src/main/protobuf/ShoppingCartService.proto)
 
 
+## Event Sourcing
+<details>
+<summary>Event Sourcing Concepts</summary>
+
+Event Sourcing is a modelling technique where you not only model the state of your business but also the transitions between states. Then, instead of storing the current state the datastore saves these increments.
+
+A difference to persistence based on Create-Read-Update-Delete (CRUD) data-stores is that we don’t need to map our imagined entities to a database model up-front. Instead, we model the entities, and the events that affect their state.
+
+To update an entity’s state we use commands from the outside and events on the inside:
+
+- `Commands`: The state of the entity can be changed only by sending commands to it. The commands are the "external" API of an entity. Commands request state changes. The current state may reject the command, or it may accept it producing zero, one or many events (depending on the command and the current state).
+- `Events`: The events represent changes of the entity’s state and are the only way to change it. The entity creates events from commands. Events are an internal mechanism for the entity to mutate the state, other parties can’t send events. Other parts of the application may listen to the created events. Summing up, events are facts new tab.
+
+Events will be serialized and published into the Journal table in the database. The Journal can then be consumed by the emitting entity or by third parties.
+
+The events are persisted to the datastore, while the entity state is kept in memory. In case of a restart the latest state gets rebuilt by replaying the events from the Event Journal.
+
+A client trying to mutate the state of an entity will produce a command message and send it to the entity. Commands are a type of message. Sometimes, commands include the address of the sender, the entity can use the sender address to send a message back with a reply.
+
+Events are facts, while commands are requests for a state mutation.
+
+### Advantages of Event Sourcing
+
+Event Sourcing achieves persistence by storing state changes as historical events that capture business activity. This decouples the events from the storage mechanism, allowing them to be aggregated, or placed in a group with logical boundaries. Event Sourcing is one of the patterns that enables concurrent, distributed systems to achieve high performance, scalability and resilience.
+
+In a distributed architecture, Event Sourcing provides the following advantages:
+
+- In a traditional CRUD model, entities use a dual representation as a mutable object in memory, and a mutable row in a relational database table. This leads to the infamous object relational impedance mismatch. Object-relational mappers bridge this divide, but bring new complexities of their own. The event sourcing model treats the database as an append-only log of serialized events. It does not attempt to model the state of each entity or the relationships between them directly in the database schema. This greatly simplifies the code that writes to and reads from the database.
+- The history of how an entity reached its current state remains in the stored events. Consistency between Transactional data and audit data are the same data which guarantees consistency between them.
+- Event Sourcing brings the ability to analyze the event stream and derive important business information from it — perhaps things that were not even thought about when designing the events. You can add new views on our system’s activity without making the write-side more complicated.
+- It improves write performance, since the data store only needs to append the events. There are no updates and no deletes.
+- Event Sourced systems are easy to test and debug. Commands and Events can be simulated for test purposes. The event log provides a good record for debugging. When detecting an issue in production, you can replay the event log in a controlled environment to understand how an entity reached the bad state.
+
+</details>
+
+
 # Resources
 
 ## Akka
 - [Akka Platform Guide](https://developer.lightbend.com/docs/akka-platform-guide/index.html)
+- [Akka Documentation](https://doc.akka.io/docs/akka/current/typed/guide/introduction.html#how-to-get-started)
+- [Akka in Action, Second Edition](https://www.manning.com/books/akka-in-action-second-edition)
+- [Build Cloud Native Microservices on Kubernetes](https://go.lightbend.com/akka-platform-workshop-part-1-on-demand-recording)
 - [Implementing Microservices with Akka](https://developer.lightbend.com/docs/akka-platform-guide/microservices-tutorial/index.html)
-  - [Part 1 - Developer Set Up and gRPC Cart Service](https://go.lightbend.com/akka-platform-workshop-part-1-on-demand-recording?_ga=2.191337898.1858362480.1660105671-1972591103.1660105671)
-
+- [Programming Reactive Systems (Scala 2 version)](https://www.coursera.org/learn/scala2-akka-reactive/home/info)
 
 ## Kubernetes
 - [Kubernetes from Zero to Hero!](https://www.youtube.com/watch?v=X48VuDVv0do) from Youtube
